@@ -53,12 +53,6 @@ def main():
         return
     try:
         subprocess.run([get_python_interpreter(), f"main-{language}.py"])
-        console.log(
-            f"Subprocess command: {get_python_interpreter(), f'main-{language}.py'}"
-        )
-        console.print(
-            Panel("Script executado com sucesso.",
-                  title="[bold green]Sucesso[/bold green]"))
     except subprocess.CalledProcessError as e:
         clear_screen()
         console.print(

@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "repl_python3_server-cloner-"
-version = "0.3"
-description = "By joaokristani version 0.3 https://discord.gg/Qvf5NUtqMg"
+version = "1.4"
+description = "By joaokristani version 1.4 https://discord.gg/Qvf5NUtqMg"
 authors = ["joaokristani"]
 
 [tool.poetry.dependencies]

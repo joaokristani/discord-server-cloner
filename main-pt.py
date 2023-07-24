@@ -5,14 +5,12 @@ from pypresence import Presence
 import time
 import sys
 import discord
-import subprocess
 import json
 import traceback
 from rich.table import Table
 from rich.console import Console
 from rich.style import Style
 from rich.panel import Panel as RichPanel
-from rich.text import Text
 from rich.progress import Progress
 import asyncio
 from colorama import Fore, init, Style
@@ -20,7 +18,7 @@ import platform
 import inquirer
 from cloner import Clone
 
-version = '0.3'
+version = '1.4'
 clones = {'Clones_teste_feitos': 0}
 console = Console()
 
@@ -46,6 +44,82 @@ def clearall():
  ░ ░ ░  ░ ░ ░ ▒    ░   ▒   ░ ░ ░ ▒  ░ ░░ ░   ░░   ░  ▒ ░░  ░  ░    ░        ░   ▒      ░   ░ ░  ▒ ░
  ░   ░      ░ ░        ░  ░    ░ ░  ░  ░      ░      ░        ░                 ░  ░         ░  ░  
 {Style.RESET_ALL}{Fore.RESET}""")
+
+
+def get_user_preferences():
+    preferences = {}
+    preferences['guild_edit'] = True
+    preferences['channels_delete'] = True
+    preferences['roles_create'] = True
+    preferences['categories_create'] = True
+    preferences['channels_create'] = True
+    preferences['emojis_create'] = False
+
+    def map_boolean_to_string(value):
+        return "Sim" if value else "Não"
+
+    panel_title = "Config BETA"
+    panel_content = "\n"
+    panel_content += f"- Alterar nome e ícone do servidor: {map_boolean_to_string(preferences.get('guild_edit', False))}\n"
+    panel_content += f"- Excluir os canais do servidor de destino: {map_boolean_to_string(preferences.get('channels_delete', False))}\n"
+    panel_content += f"- Clonar os cargos: {map_boolean_to_string(preferences.get('roles_create', False))}\n"
+    panel_content += f"- Clonar as categorias: {map_boolean_to_string(preferences.get('categories_create', False))}\n"
+    panel_content += f"- Clonar os canais: {map_boolean_to_string(preferences.get('channels_create', False))}\n"
+    panel_content += f"- Clonar os emojis: {map_boolean_to_string(preferences.get('emojis_create', False))}\n"
+    console.print(
+        RichPanel(panel_content,
+                  title=panel_title,
+                  style="bold blue",
+                  width=70))
+
+    questions = [
+        inquirer.List(
+            'reconfigure',
+            message='Você deseja reconfigurar as configurações padrão?',
+            choices=['Sim', 'Não'],
+            default='Não')
+    ]
+
+    answers = inquirer.prompt(questions)
+
+    reconfigure = answers['reconfigure']
+    if reconfigure == 'Sim':
+        questions = [
+            inquirer.Confirm(
+                'guild_edit',
+                message='Deseja editar o ícone do servidor e nome?',
+                default=False),
+            inquirer.Confirm('channels_delete',
+                             message='Deseja deletar os canais?',
+                             default=False),
+            inquirer.Confirm(
+                'roles_create',
+                message=
+                'Deseja clonar os cargos? (NÃO É RECOMENDADO DESATIVAR)',
+                default=False),
+            inquirer.Confirm('categories_create',
+                             message='Deseja clonar as categorias?',
+                             default=False),
+            inquirer.Confirm('channels_create',
+                             message='Deseja clonar os canais?',
+                             default=False),
+            inquirer.Confirm(
+                'emojis_create',
+                message=
+                'Deseja clonar os Emojis? (É RECOMENDADO ATIVAR ESSA CLONAGEM SOLO(SOZINHA) PARA NÃO OCORRER ERROS)',
+                default=False)
+        ]
+
+        answers = inquirer.prompt(questions)
+        preferences['guild_edit'] = answers['guild_edit']
+        preferences['channels_delete'] = answers['channels_delete']
+        preferences['roles_create'] = answers['roles_create']
+        preferences['categories_create'] = answers['categories_create']
+        preferences['channels_create'] = answers['channels_create']
+        preferences['emojis_create'] = answers['emojis_create']
+
+    clearall()
+    return preferences
 
 
 versao_python = sys.version.split()[0]
@@ -133,55 +207,49 @@ async def on_ready():
     try:
         start_time = time.time()
         global clones
-        table = Table(title="Versões", style="bold magenta", width=40)
-        table.add_column("Componente")
-        table.add_column("Versão", style="cyan")
+        table = Table(title="Versões", style="bold magenta", width=85)
+        table.add_column("Componente", width=35)
+        table.add_column("Versão", style="cyan", width=35)
         table.add_row("Clonador", version)
         table.add_row("Discord.py", discord.__version__)
         table.add_row("Python", versao_python)
         console.print(RichPanel(table))
         console.print(
-            RichPanel(f" Autenticação bem-sucedida",
+            RichPanel(f" Autenticação bem-sucedida em {client.user.name}",
                       style="bold green",
-                      width=47))
-        console.print(
-            RichPanel(
-                f" Olá, {client.user.name}! A clonagem começará em breve...",
-                style="bold blue",
-                width=47))
+                      width=69))
         print(f"\n")
-        loading(20)
+        loading(5)
         clearall()
-        questions = [
-            inquirer.List(
-                'clone_emojis',
-                message="\033[35mDeseja clonar emojis?\033[0m",
-                choices=['\033[32mSim\033[0m', '\033[31mNão\033[0m'],
-            ),
-        ]
-        answers = inquirer.prompt(questions)
         guild_from = client.get_guild(int(input_guild_id))
         guild_to = client.get_guild(int(output_guild_id))
-        await Clone.guild_edit(guild_to, guild_from)
-        await Clone.channels_delete(guild_to)
-        await Clone.roles_create(guild_to, guild_from)
-        await Clone.categories_create(guild_to, guild_from)
-        await Clone.channels_create(guild_to, guild_from)
+        preferences = get_user_preferences()
+
+        if not any(preferences.values()):
+            preferences = {k: True for k in preferences}
+
+        if preferences['guild_edit']:
+            await Clone.guild_edit(guild_to, guild_from)
+        if preferences['channels_delete']:
+            await Clone.channels_delete(guild_to)
+        if preferences['roles_create']:
+            await Clone.roles_create(guild_to, guild_from)
+        if preferences['categories_create']:
+            await Clone.categories_create(guild_to, guild_from)
+        if preferences['channels_create']:
+            await Clone.channels_create(guild_to, guild_from)
+        if preferences['emojis_create']:
+            await Clone.emojis_create(guild_to, guild_from)
+
         end_time = time.time()
         duration = end_time - start_time
         duration_str = time.strftime("%M:%S", time.gmtime(duration))
-        if answers['clone_emojis'] == '\033[32mSim\033[0m':
-            print(
-                f"{Style.BRIGHT}{Fore.YELLOW}Clonagem de emojis em andamento. Isso pode levar alguns instantes."
-            )
-            loading(13)
-            await Clone.emojis_create(guild_to, guild_from)
-
+        print("\n\n")
         print(
-            f"{Style.BRIGHT}{Fore.BLUE}O servidor foi clonado com sucesso em {Fore.YELLOW}{duration_str}{Style.RESET_ALL}"
+            f"{Style.BRIGHT}{Fore.BLUE} O servidor foi clonado com sucesso em {Fore.YELLOW}{duration_str}{Style.RESET_ALL}"
         )
         print(
-            f"{Style.BRIGHT}{Fore.BLUE}Visite nosso servidor do Discord: {Fore.YELLOW}https://discord.gg/Qvf5NUtqMg{Style.RESET_ALL}"
+            f"{Style.BRIGHT}{Fore.BLUE} Visite nosso servidor do Discord: {Fore.YELLOW}https://discord.gg/Qvf5NUtqMg{Style.RESET_ALL}"
         )
         with open('saves.json', 'r') as f:
             clones = json.load(f)
@@ -218,18 +286,22 @@ async def on_ready():
     except Exception as e:
 
         print(Fore.RED + " Ocorreu um erro:", e)
+        print("\n")
         traceback.print_exc()
-        print(Fore.YELLOW + " Possíveis causas e soluções:")
-        print(Fore.YELLOW + " 1. ID do servidor incorreto")
-        print(Fore.YELLOW + " 2. Você não está no servidor inserido")
-        print(Fore.YELLOW + " 3. Servidor inserido não existe")
-        print(
-            Fore.RED +
-            "Mesmo assim não foi resolvido? entre em contato com o desenvolvedor em https://discord.gg/Qvf5NUtqMg"
+        panel_text = (
+            f"1. ID do servidor incorreto\n"
+            f"2. Você não está no servidor inserido\n"
+            f"3. Servidor inserido não existe\n"
+            f"Mesmo assim não foi resolvido? Entre em contato com o desenvolvedor em [link=https://discord.gg/Qvf5NUtqMg]https://discord.gg/Qvf5NUtqMg[/link]"
         )
+        console.print(
+            RichPanel(panel_text,
+                      title="Possíveis causas e soluções",
+                      style="bold red",
+                      width=70))
         print(
             Fore.YELLOW +
-            "\n\nO código será reiniciado em 20 segundos. Se você não quiser esperar atualize a página e comece novamente."
+            "\nO código será reiniciado em 20 segundos. Se você não quiser esperar atualize a página e comece novamente."
         )
         print(Style.RESET_ALL)
         loading(20)

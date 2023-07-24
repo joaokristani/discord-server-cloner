@@ -10,7 +10,7 @@ class Clone:
     async def roles_delete(guild_to: discord.Guild):
         for role in guild_to.roles:
             try:
-                if role.name != "@everyone":
+                if role.name != "@everyone": 
                     await role.delete()
                     print_delete(
                         f"O cargo {Fore.YELLOW}{role.name}{Fore.BLUE} Foi deletado"
@@ -311,7 +311,6 @@ class Clone:
         except discord.Forbidden:
             print_error(f"Erro ao alterar o ícone do grupo: {guild_to.name}")
 
-
 def print_add(message):
     print(f'{Style.BRIGHT}{Fore.CYAN} {message}{Fore.RESET}')
 
@@ -325,3 +324,4 @@ def print_warning(message):
 
 def print_error(message):
     print(f'{Style.BRIGHT}{Fore.RED} {message}{Fore.RESET}')
+ 

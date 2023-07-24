@@ -5,14 +5,12 @@ from pypresence import Presence
 import time
 import sys
 import discord
-import subprocess
 import json
 import traceback
 from rich.table import Table
 from rich.console import Console
 from rich.style import Style
 from rich.panel import Panel as RichPanel
-from rich.text import Text
 from rich.progress import Progress
 import asyncio
 from colorama import Fore, init, Style
@@ -20,11 +18,17 @@ import platform
 import inquirer
 from cloner import Clone
 
-version = '0.3'
-clones = {'Clones_teste_feitos': 0}
-versao_python = sys.version.split()[0]
-
+version = '1.4'
+#clones = {'Clones_test_done': 0}
 console = Console()
+
+
+def loading(seconds):
+    with Progress() as progress:
+        task = progress.add_task("", total=seconds)
+        while not progress.finished:
+            progress.update(task, advance=1)
+            time.sleep(1)
 
 
 def clearall():
@@ -39,27 +43,112 @@ def clearall():
  ▒ ░▒░    ░ ▒ ▒░   ▒   ▒▒ ░  ░ ▒ ▒░ ░ ░▒ ▒░  ░▒ ░ ▒░ ▒ ░░ ░▒  ░ ░    ░      ▒   ▒▒ ░░ ░░   ░ ▒░ ▒ ░
  ░ ░ ░  ░ ░ ░ ▒    ░   ▒   ░ ░ ░ ▒  ░ ░░ ░   ░░   ░  ▒ ░░  ░  ░    ░        ░   ▒      ░   ░ ░  ▒ ░
  ░   ░      ░ ░        ░  ░    ░ ░  ░  ░      ░      ░        ░                 ░  ░         ░  ░  
-{Style.RESET_ALL}{Fore.MAGENTA}{Fore.RESET}""")
+{Style.RESET_ALL}{Fore.RESET}""")
+
+
+def get_user_preferences():
+    preferences = {}
+    preferences['guild_edit'] = True
+    preferences['channels_delete'] = True
+    preferences['roles_create'] = True
+    preferences['categories_create'] = True
+    preferences['channels_create'] = True
+    preferences['emojis_create'] = False
+
+    def map_boolean_to_string(value):
+        return "Yes" if value else "No"
+
+    panel_title = "Config BETA"
+    panel_content = "\n"
+    panel_content += f"- Change server name and icon: {map_boolean_to_string(preferences.get('guild_edit', False))}\n"
+    panel_content += f"- Delete destination server channels: {map_boolean_to_string(preferences.get('channels_delete', False))}\n"
+    panel_content += f"- Clone roles: {map_boolean_to_string(preferences.get('roles_create', False))}\n"
+    panel_content += f"- Clone categories: {map_boolean_to_string(preferences.get('categories_create', False))}\n"
+    panel_content += f"- Clone channels: {map_boolean_to_string(preferences.get('channels_create', False))}\n"
+    panel_content += f"- Clone emojis: {map_boolean_to_string(preferences.get('emojis_create', False))}\n"
+    console.print(
+        RichPanel(panel_content,
+                  title=panel_title,
+                  style="bold blue",
+                  width=70))
+
+    questions = [
+        inquirer.List(
+            'reconfigure',
+            message='Do you want to reconfigure the default settings?',
+            choices=['Yes', 'No'],
+            default='No')
+    ]
+
+    answers = inquirer.prompt(questions)
+
+    reconfigure = answers['reconfigure']
+    if reconfigure == 'Yes':
+        questions = [
+            inquirer.Confirm(
+                'guild_edit',
+                message='Do you want to edit the server icon and name?',
+                default=False),
+            inquirer.Confirm('channels_delete',
+                             message='Do you want to delete the channels?',
+                             default=False),
+            inquirer.Confirm(
+                'roles_create',
+                message=
+                'Do you want to clone roles? (NOT RECOMMENDED TO DISABLE)',
+                default=False),
+            inquirer.Confirm('categories_create',
+                             message='Do you want to clone categories?',
+                             default=False),
+            inquirer.Confirm('channels_create',
+                             message='Do you want to clone channels?',
+                             default=False),
+            inquirer.Confirm(
+                'emojis_create',
+                message=
+                'Do you want to clone emojis? (IT IS RECOMMENDED TO ENABLE THIS SOLO CLONING TO AVOID ERRORS)',
+                default=False)
+        ]
+
+        answers = inquirer.prompt(questions)
+        preferences['guild_edit'] = answers['guild_edit']
+        preferences['channels_delete'] = answers['channels_delete']
+        preferences['roles_create'] = answers['roles_create']
+        preferences['categories_create'] = answers['categories_create']
+        preferences['channels_create'] = answers['channels_create']
+        preferences['emojis_create'] = answers['emojis_create']
+
+    clearall()
+    return preferences
+
+
+versao_python = sys.version.split()[0]
+
+
+def restart():
+    python = sys.executable
+    os.execv(python, [python] + sys.argv)
 
 
 client = discord.Client()
-if os == "Windows":
+if platform.system() == "Windows":
     system("cls")
 else:
     print(chr(27) + "[2J")
     clearall()
+
 while True:
     token = input(
-        f'{Style.BRIGHT}{Fore.MAGENTA}Enter your token to proceed{Style.RESET_ALL}{Fore.RESET}\n >'
+        f'{Style.BRIGHT}{Fore.MAGENTA}Insert your token to proceed:{Style.RESET_ALL}{Fore.RESET}\n >'
     )
     guild_s = input(
-        f'{Style.BRIGHT}{Fore.MAGENTA}Enter the ID of the server you wish to replicate{Style.RESET_ALL}{Fore.RESET}\n >'
+        f'{Style.BRIGHT}{Fore.MAGENTA}Insert the ID of the server you want to replicate:{Style.RESET_ALL}{Fore.RESET}\n >'
     )
     guild = input(
-        f'{Style.BRIGHT}{Fore.MAGENTA}Enter the ID of the destination server to paste the copied server{Style.RESET_ALL}{Fore.RESET}\n>'
+        f'{Style.BRIGHT}{Fore.MAGENTA}Insert the ID of the destination server to paste the copied server:{Style.RESET_ALL}{Fore.RESET}\n>'
     )
     clearall()
-    print(f'{Style.BRIGHT}{Fore.GREEN}The entered values are:')
+    print(f'{Style.BRIGHT}{Fore.GREEN}The values you inserted are:')
     token_length = len(token)
     hidden_token = "*" * token_length
     print(
@@ -69,7 +158,7 @@ while True:
         f'{Style.BRIGHT}{Fore.GREEN}Server ID to replicate: {Fore.YELLOW}{guild_s}{Style.RESET_ALL}{Fore.RESET}'
     )
     print(
-        f'{Style.BRIGHT}{Fore.GREEN}ID of the server you want to paste the copied server: {Fore.YELLOW}{guild}{Style.RESET_ALL}{Fore.RESET}'
+        f'{Style.BRIGHT}{Fore.GREEN}Destination server ID to paste the copied server: {Fore.YELLOW}{guild}{Style.RESET_ALL}{Fore.RESET}'
     )
     confirm = input(
         f'{Style.BRIGHT}{Fore.MAGENTA}Are the values correct? {Fore.YELLOW}(Y/N){Style.RESET_ALL}{Fore.RESET}\n >'
@@ -78,13 +167,13 @@ while True:
         if not guild_s.isnumeric():
             clearall()
             print(
-                f'{Style.BRIGHT}{Fore.RED}The server ID to replicate should only contain numbers.{Style.RESET_ALL}{Fore.RESET}'
+                f'{Style.BRIGHT}{Fore.RED}The server ID to replicate should contain only numbers.{Style.RESET_ALL}{Fore.RESET}'
             )
             continue
         if not guild.isnumeric():
             clearall()
             print(
-                f'{Style.BRIGHT}{Fore.RED}The destination server ID should only contain numbers.{Style.RESET_ALL}{Fore.RESET}'
+                f'{Style.BRIGHT}{Fore.RED}The destination server ID should contain only numbers.{Style.RESET_ALL}{Fore.RESET}'
             )
             continue
         if not token.strip() or not guild_s.strip() or not guild.strip():
@@ -101,14 +190,13 @@ while True:
             )
             continue
         break
-
     elif confirm.upper() == 'N':
         clearall()
-else:
-    clearall()
-    print(
-        f'{Style.BRIGHT}{Fore.RED}Invalid option. Please enter Y or N.{Style.RESET_ALL}{Fore.RESET}'
-    )
+    else:
+        clearall()
+        print(
+            f'{Style.BRIGHT}{Fore.RED}Invalid option. Please insert Y or N.{Style.RESET_ALL}{Fore.RESET}'
+        )
 input_guild_id = guild_s
 output_guild_id = guild
 token = token
@@ -120,79 +208,102 @@ async def on_ready():
     try:
         start_time = time.time()
         global clones
-        table = Table(title="Versions", style="bold magenta")
-        table.add_column("Component")
-        table.add_column("Version")
-        table.add_row("Cloner", str(version), style="cyan")
-        table.add_row("Discord.py", str(discord.__version__), style="cyan")
-        table.add_row("Python", str(versao_python), style="cyan")
+        table = Table(title="Versions", style="bold magenta", width=85)
+        table.add_column("Component", width=35)
+        table.add_column("Version", style="cyan", width=35)
+        table.add_row("Cloner", version)
+        table.add_row("Discord.py", discord.__version__)
+        table.add_row("Python", versao_python)
         console.print(RichPanel(table))
         console.print(
-            RichPanel(f" Successful authentication",
+            RichPanel(f" Successful authentication as {client.user.name}",
                       style="bold green",
-                      width=47))
-        console.print(
-            RichPanel(
-                f" Hello, {client.user.name}! Cloning will start momentarily...",
-                style="bold blue",
-                width=47))
+                      width=69))
         print(f"\n")
-        questions = [
-            inquirer.List(
-                'clone_emojis',
-                message="\033[35mDo you want to clone emojis?\033[0m",
-                choices=['\033[32mYes\033[0m', '\033[31mNo\033[0m'],
-            ),
-        ]
-        answers = inquirer.prompt(questions)
+        loading(5)
+        clearall()
         guild_from = client.get_guild(int(input_guild_id))
         guild_to = client.get_guild(int(output_guild_id))
-        await Clone.guild_edit(guild_to, guild_from)
-        await Clone.channels_delete(guild_to)
-        await Clone.roles_create(guild_to, guild_from)
-        await Clone.categories_create(guild_to, guild_from)
-        await Clone.channels_create(guild_to, guild_from)
+        preferences = get_user_preferences()
+
+        if not any(preferences.values()):
+            preferences = {k: True for k in preferences}
+
+        if preferences['guild_edit']:
+            await Clone.guild_edit(guild_to, guild_from)
+        if preferences['channels_delete']:
+            await Clone.channels_delete(guild_to)
+        if preferences['roles_create']:
+            await Clone.roles_create(guild_to, guild_from)
+        if preferences['categories_create']:
+            await Clone.categories_create(guild_to, guild_from)
+        if preferences['channels_create']:
+            await Clone.channels_create(guild_to, guild_from)
+        if preferences['emojis_create']:
+            await Clone.emojis_create(guild_to, guild_from)
+
         end_time = time.time()
         duration = end_time - start_time
         duration_str = time.strftime("%M:%S", time.gmtime(duration))
-        if answers['clone_emojis'] == '\033[32mYes\033[0m':
-            print(
-                f"{Style.BRIGHT}{Fore.YELLOW}Cloning emojis in progress. This may take a few moments."
-            )
-            await asyncio.sleep(13)
-            await Clone.emojis_create(guild_to, guild_from)
-            print(
-                f"{Style.BRIGHT}{Fore.BLUE}The server was successfully cloned in {Fore.YELLOW}{duration_str}{Style.RESET_ALL}"
-            )
-            print(
-                f"{Style.BRIGHT}{Fore.BLUE}Visit our Discord server: {Fore.YELLOW}https://discord.gg/Qvf5NUtqMg{Style.RESET_ALL}"
-            )
-            clones['Clones_teste_feitos'] += 1
-            with open('saves.json', 'w') as f:
-                json.dump(clones, f)
-            print(
-                f"{Style.BRIGHT}{Fore.BLUE}Finalizing process and ending session on account {Fore.YELLOW}{client.user}"
-            )
-            await client.close()  # closes the code
+        print("\n\n")
+        print(
+            f"{Style.BRIGHT}{Fore.BLUE} The server was successfully cloned in {Fore.YELLOW}{duration_str}{Style.RESET_ALL}"
+        )
+        print(
+            f"{Style.BRIGHT}{Fore.BLUE} Visit our Discord server: {Fore.YELLOW}https://discord.gg/Qvf5NUtqMg{Style.RESET_ALL}"
+        )
+        #with open('saves.json', 'r') as f:
+          #  clones = json.load(f)
+        #clones['Clones_test_done'] += 1
+       # with open('saves.json', 'w') as f:
+          #  json.dump(clones, f)
+        print(
+            f"{Style.BRIGHT}{Fore.BLUE}Ending process and logging out from {Fore.YELLOW}{client.user}"
+        )
+        await asyncio.sleep(30)
+        await client.close()
+
     except discord.LoginFailure:
         print(
-            "Could not authenticate to the account. Check if the token is correct."
+            "Unable to authenticate with the account. Check if the token is correct."
         )
     except discord.Forbidden:
-        print("Could not clone due to insufficient permissions.")
-    except discord.HTTPException:
-        print(
-            "An error occurred in communicating with the Discord API. In 20 seconds, the code will resume from where it left off."
-        )
-        await asyncio.sleep(20)
-        await Clone.emojis_create(guild_to, guild_from)
-
+        print("Cloning failed due to insufficient permissions.")
     except discord.NotFound:
         print(
-            "Could not find one of the copy elements (channels, categories, etc.)."
+            "Unable to find one of the elements to be copied (channels, categories, etc.)."
         )
+    except discord.HTTPException:
+        print(
+            "There was a communication error with the Discord API. The code will continue from where it left off in 20 seconds."
+        )
+        loading(20)
+        await Clone.emojis_create(guild_to, guild_from)
+    except asyncio.TimeoutError:
+        print("An error occurred: TimeOut")
     except Exception as e:
         print(Fore.RED + "An error occurred:", e)
+        print("\n")
+        traceback.print_exc()
+        panel_text = (
+            f"1. Incorrect server ID\n"
+            f"2. You are not in the inserted server\n"
+            f"3. Inserted server does not exist\n"
+            f"Still not resolved? Contact the developer at [link=https://discord.gg/Qvf5NUtqMg]https://discord.gg/Qvf5NUtqMg[/link]"
+        )
+        console.print(
+            RichPanel(panel_text,
+                      title="Possible Causes and Solutions",
+                      style="bold red",
+                      width=70))
+        print(
+            Fore.YELLOW +
+            "\nThe code will restart in 20 seconds. If you don't want to wait, refresh the page and start again."
+        )
+        print(Style.RESET_ALL)
+        loading(20)
+        restart()
+        print(Fore.RED + "Restarting...")
 
 
 try:
@@ -201,9 +312,10 @@ except discord.LoginFailure:
     print(Fore.RED + "The inserted token is invalid")
     print(
         Fore.YELLOW +
-        "\n\nThe code will be restarted in 10 seconds. If you don't want to wait, refresh the page and start again."
+        "\n\nThe code will restart in 10 seconds. If you don't want to wait, refresh the page and start again."
     )
     print(Style.RESET_ALL)
-    time.sleep(10)
-    subprocess.Popen(["python", __file__])
+    loading(10)
+    restart()
+    clearall()
     print(Fore.RED + "Restarting...")
