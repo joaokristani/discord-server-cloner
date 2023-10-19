@@ -19,7 +19,6 @@ import inquirer
 from cloner import Clone
 
 version = '1.4'
-clones = {'Clones_teste_feitos': 0}
 console = Console()
 
 
@@ -206,7 +205,6 @@ clearall()
 async def on_ready():
     try:
         start_time = time.time()
-        global clones
         table = Table(title="Versões", style="bold magenta", width=85)
         table.add_column("Componente", width=35)
         table.add_column("Versão", style="cyan", width=35)
@@ -251,11 +249,6 @@ async def on_ready():
         print(
             f"{Style.BRIGHT}{Fore.BLUE} Visite nosso servidor do Discord: {Fore.YELLOW}https://discord.gg/Qvf5NUtqMg{Style.RESET_ALL}"
         )
-        with open('saves.json', 'r') as f:
-            clones = json.load(f)
-        clones['Clones_teste_feitos'] += 1
-        with open('saves.json', 'w') as f:
-            json.dump(clones, f)
         print(
             f"{Style.BRIGHT}{Fore.BLUE}Finalizando processo e encerrando a sessão na conta {Fore.YELLOW}{client.user}"
         )
@@ -310,7 +303,7 @@ async def on_ready():
 
 
 try:
-    client.run(token, bot=False)
+    client.run(token)
 except discord.LoginFailure:
     print(Fore.RED + "O token inserido é inválido")
     print(
