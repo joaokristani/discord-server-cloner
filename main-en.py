@@ -19,7 +19,6 @@ import inquirer
 from cloner import Clone
 
 version = '1.4'
-#clones = {'Clones_test_done': 0}
 console = Console()
 
 
@@ -207,7 +206,6 @@ clearall()
 async def on_ready():
     try:
         start_time = time.time()
-        global clones
         table = Table(title="Versions", style="bold magenta", width=85)
         table.add_column("Component", width=35)
         table.add_column("Version", style="cyan", width=35)
@@ -252,11 +250,6 @@ async def on_ready():
         print(
             f"{Style.BRIGHT}{Fore.BLUE} Visit our Discord server: {Fore.YELLOW}https://discord.gg/Qvf5NUtqMg{Style.RESET_ALL}"
         )
-        #with open('saves.json', 'r') as f:
-          #  clones = json.load(f)
-        #clones['Clones_test_done'] += 1
-       # with open('saves.json', 'w') as f:
-          #  json.dump(clones, f)
         print(
             f"{Style.BRIGHT}{Fore.BLUE}Ending process and logging out from {Fore.YELLOW}{client.user}"
         )
