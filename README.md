@@ -1,13 +1,14 @@
 # Discord Server Cloner
-Originalmente este projeto foi postado apenas para [repl.it](https://repl.it/@joaokristani/Discord-server-clone), mas o replit ultimamente começou a baitolar e então este projeto parou de funcionar para replit
-tivemos que fazer os commit necessario para o github, ele funcionará normalmente em seu pc, eu creio que tambem funcione para codesandbox e entre outras plataformas semelhantes
+Originally this project was posted for [repl.it](https://repl.it/@joaokristani/Discord-server-clone), but it was ultimately submitted to baitolar and started this project to function for replication
+Please note that the commit is necessary for Github, it will work normally on your PC, but it also works for codesandbox and other platforms.
 
+Para but functionalities and a lack of [access to a new version](https://github.com/joaokristani/Discord-Server-Cloner-2x)
 
-# Instalação
+# Installation
 
-```python 
+```python
 pip install -r requirements.txt
 ```
-```python 
+```python
 python3 language.py
 ```
