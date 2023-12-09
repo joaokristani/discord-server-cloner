@@ -300,7 +300,7 @@ async def on_ready():
 
 
 try:
-    client.run(token, bot=False)
+    client.run(token)
 except discord.LoginFailure:
     print(Fore.RED + "The inserted token is invalid")
     print(
